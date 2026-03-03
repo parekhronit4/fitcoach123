@@ -73,6 +73,7 @@ input[type=date]{color-scheme:dark}
 .sync-ok{background:rgba(74,222,128,0.08);color:#4ade80}
 .sync-err{background:rgba(248,113,113,0.08);color:#f87171}
 .sync-ing{background:rgba(249,115,22,0.08);color:#fb923c}
+.api-warning{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#fca5a5;line-height:1.6}
 </style>
 </head>
 <body>
@@ -91,6 +92,9 @@ input[type=date]{color-scheme:dark}
 <div class="content">
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
+    <div id="api-warning" style="display:none" class="api-warning">
+      ⚠️ <strong>API Key not set.</strong> AI features won't work. Open index.html on GitHub and replace <code>PASTE_YOUR_API_KEY_HERE</code> with your actual Anthropic API key.
+    </div>
     <div class="stat-grid">
       <div class="stat stat-orange"><div class="stat-val" style="color:#fb923c" id="d-weight">83 kg</div><div class="stat-label">Current Weight</div></div>
       <div class="stat stat-green"><div class="stat-val" style="color:#4ade80" id="d-togo">10 kg</div><div class="stat-label">To Goal</div></div>
@@ -183,7 +187,12 @@ input[type=date]{color-scheme:dark}
 
 <script>
 // ============================================================
-// CONFIG
+// ⚠️  PASTE YOUR ANTHROPIC API KEY BELOW — REPLACE THE PLACEHOLDER
+// ============================================================
+var API_KEY = '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';
+
+// ============================================================
+// CONFIG — already set up for Ron
 // ============================================================
 var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz2pbxjZpN0HU9fiiMhKqWbUAvl-84IWd4_j1Neo6OqgNoWeiVzmH6UZS3XADbx5pvy/exec';
 var SYS = 'You are FitCoach AI, a personal trainer and nutritionist for Ron. Ron: Age 32, Height 5.6ft (170.7cm), Start 83kg, Goal 73kg by May 31 2025, BMI ~28.5. Sedentary WFH, Fit4Less gym. Diet: Vegetarian STRICT - NO onion, NO garlic, NO eggs, NO fish. Weekly split: Mon=Chest+Triceps, Tue=Back+Biceps, Wed=Legs+Glutes, Thu=Shoulders+Core, Fri=Full Body Circuit, Sat=HIIT+Cardio, Sun=Rest. For workouts list exercises with sets x reps and beginner-friendly starting weights. For log analysis give day score 1-10, calorie estimate, deficit or surplus, progress to goal. Be concise, structured, encouraging. Always address Ron by name.';
@@ -201,9 +210,17 @@ function getDays(){var t=new Date();t.setHours(0,0,0,0);return Math.max(0,Math.c
 function getBMI(w){return(w/(1.707*1.707)).toFixed(1);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function saveLogs(){localStorage.setItem('fc_logs_ron',JSON.stringify(logs));}
+function apiHeaders(){return{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};}
+
+// Check API key on load
+window.addEventListener('load', function(){
+  if(API_KEY === 'PASTE_YOUR_API_KEY_HERE' || !API_KEY){
+    document.getElementById('api-warning').style.display='';
+  }
+});
 
 // ============================================================
-// GOOGLE SHEETS SYNC
+// GOOGLE SHEETS
 // ============================================================
 async function saveToSheets(entry){
   var ss=document.getElementById('sync-status');
@@ -224,15 +241,12 @@ async function loadFromSheets(){
     var res=await fetch(SHEETS_URL+'?t='+Date.now());
     var data=await res.json();
     if(data&&data.length>0){
-      // merge sheets data into local logs
       data.forEach(function(row){
         if(!row.Date)return;
         var exists=logs.find(function(l){return l.dt===row.Date;});
         if(!exists){logs.push({dt:row.Date,wt:row.Weight,ex:row.Exercises,food:row.Food,dur:row.Duration,notes:row.Notes});}
       });
-      saveLogs();
-      initProg();
-      initDB();
+      saveLogs();initProg();initDB();
     }
   }catch(e){
     chart.innerHTML='<div class="empty">Could not load from Sheets. Check connection.</div>';
@@ -271,28 +285,21 @@ function initDB(){
 }
 
 // ============================================================
-// TODAY'S PLAN
+// PLAN + COACH
 // ============================================================
 function initPlan(){
   var dow=new Date().getDay(),f=DF[dow];
   document.getElementById('plan-header').innerHTML='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+f.i+'</span><div><div style="font-weight:700;font-size:15px">'+FD[dow]+"'s Focus</div><div style='color:#fb923c;font-size:13px'>"+f.l+'</div></div></div>';
   var ch=['Full workout for today: '+f.l+' with sets, reps and weights for beginner returning to gym','What to eat before and after gym today?','Alternative exercises if machines are busy','How long should today session take?'];
   window.planChips=ch;
-  document.getElementById('plan-chips').innerHTML=ch.map(function(q,i){
-    return'<button class="chip" onclick="doMsg(\'plan\',planChips['+i+'])">'+(q.length>45?q.slice(0,45)+'...':q)+'</button>';
-  }).join('');
+  document.getElementById('plan-chips').innerHTML=ch.map(function(q,i){return'<button class="chip" onclick="doMsg(\'plan\',planChips['+i+'])">'+(q.length>45?q.slice(0,45)+'...':q)+'</button>';}).join('');
   renderM('plan');
 }
 
-// ============================================================
-// AI COACH
-// ============================================================
 function initCoach(){
   var ch=['Give me a full week meal plan','What supplements should I take?','I am feeling sore, what to do?','High protein vegetarian recipe','How many calories should I eat daily?'];
   window.coachChips=ch;
-  document.getElementById('coach-chips').innerHTML=ch.map(function(q,i){
-    return'<button class="chip" onclick="doMsg(\'coach\',coachChips['+i+'])">'+q+'</button>';
-  }).join('');
+  document.getElementById('coach-chips').innerHTML=ch.map(function(q,i){return'<button class="chip" onclick="doMsg(\'coach\',coachChips['+i+'])">'+q+'</button>';}).join('');
   renderM('coach');
 }
 
@@ -304,13 +311,8 @@ function initProg(){
   document.getElementById('p-logged').textContent=logs.length;
   document.getElementById('p-lost').textContent=lost.toFixed(1)+' kg';
   var wl=logs.filter(function(l){return l.wt;});
-  document.getElementById('weight-chart').innerHTML=wl.length===0?'<div class="empty">No weight logs yet. Tap Sync or log your first day!</div>':wl.map(function(l){
-    var w=parseFloat(l.wt),p=Math.max(8,((w-70)/13)*100),c=w<=73?'#4ade80':w<=76?'#fb923c':'#f87171';
-    return'<div class="bar-wrap"><span class="bar-date">'+esc(l.dt)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+p+'%;background:'+c+'"><span>'+w+' kg</span></div></div></div>';
-  }).join('');
-  document.getElementById('all-logs').innerHTML=logs.length===0?'<div class="empty">No logs yet.</div>':[...logs].reverse().map(function(l){
-    return'<div class="log-item"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">'+esc(l.dt)+'</span>'+(l.wt?'<span style="color:#fb923c;font-weight:700">'+esc(l.wt)+' kg</span>':'')+'</div>'+(l.ex?'<div style="font-size:12px;color:#64748b;margin-top:3px">💪 '+esc(l.ex)+'</div>':'')+(l.dur?'<div style="font-size:12px;color:#64748b">⏱ '+esc(l.dur)+' min</div>':'')+(l.food?'<div style="font-size:12px;color:#64748b">🥗 '+esc(l.food.slice(0,80))+'</div>':'')+'</div>';
-  }).join('');
+  document.getElementById('weight-chart').innerHTML=wl.length===0?'<div class="empty">No weight logs yet. Tap Sync or log your first day!</div>':wl.map(function(l){var w=parseFloat(l.wt),p=Math.max(8,((w-70)/13)*100),c=w<=73?'#4ade80':w<=76?'#fb923c':'#f87171';return'<div class="bar-wrap"><span class="bar-date">'+esc(l.dt)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+p+'%;background:'+c+'"><span>'+w+' kg</span></div></div></div>';}).join('');
+  document.getElementById('all-logs').innerHTML=logs.length===0?'<div class="empty">No logs yet.</div>':[...logs].reverse().map(function(l){return'<div class="log-item"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">'+esc(l.dt)+'</span>'+(l.wt?'<span style="color:#fb923c;font-weight:700">'+esc(l.wt)+' kg</span>':'')+'</div>'+(l.ex?'<div style="font-size:12px;color:#64748b;margin-top:3px">💪 '+esc(l.ex)+'</div>':'')+(l.dur?'<div style="font-size:12px;color:#64748b">⏱ '+esc(l.dur)+' min</div>':'')+(l.food?'<div style="font-size:12px;color:#64748b">🥗 '+esc(l.food.slice(0,80))+'</div>':'')+'</div>';}).join('');
 }
 
 // ============================================================
@@ -334,39 +336,32 @@ async function sendChatMsg(tab,text){
   el.scrollTop=el.scrollHeight;
   var apiMsgs=msgs.map(function(m){return{role:m.r==='user'?'user':'assistant',content:m.t};});
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:apiMsgs})});
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:apiHeaders(),body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:apiMsgs})});
     var data=await res.json();
     var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Sorry, no response.';
     msgs.push({r:'assistant',t:reply});
-  }catch(e){msgs.push({r:'assistant',t:'Connection error. Please try again.'});}
+  }catch(e){msgs.push({r:'assistant',t:'Connection error. Please check your API key is set correctly in index.html.'});}
   renderM(tab);
 }
 
 // ============================================================
-// LOG WORKOUT
+// LOG
 // ============================================================
 async function submitLog(){
-  var date=document.getElementById('log-date').value,
-      wt=document.getElementById('log-weight').value,
-      ex=document.getElementById('log-exercises').value,
-      food=document.getElementById('log-food').value,
-      dur=document.getElementById('log-duration').value,
-      notes=document.getElementById('log-notes').value;
+  var date=document.getElementById('log-date').value,wt=document.getElementById('log-weight').value,ex=document.getElementById('log-exercises').value,food=document.getElementById('log-food').value,dur=document.getElementById('log-duration').value,notes=document.getElementById('log-notes').value;
   if(!wt&&!ex&&!food){alert('Fill in at least one field.');return;}
   var btn=document.getElementById('log-submit-btn');
   btn.disabled=true;btn.textContent='Analyzing your day... ⏳';
   var entry={dt:date,wt:wt,ex:ex,food:food,dur:dur,notes:notes,ts:Date.now()};
   logs.push(entry);saveLogs();
-  // Save to Google Sheets
   await saveToSheets(entry);
-  // Get AI feedback
   var prompt='Analyze Ron\'s day:\nDate: '+date+'\nWeight: '+(wt||'not recorded')+' kg\nExercises: '+(ex||'none')+'\nFood: '+(food||'none')+'\nDuration: '+(dur||'unknown')+' min\nNotes: '+(notes||'none')+'\n\nRon started at 83kg, goal 73kg by May 31 2025.\nGive:\n1) Day score 1-10\n2) Calories burned vs consumed estimate\n3) Progress toward goal\n4) Key wins today\n5) One improvement for tomorrow\nAddress Ron by name.';
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:[{role:'user',content:prompt}]})});
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:apiHeaders(),body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:[{role:'user',content:prompt}]})});
     var data=await res.json();
     var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Log saved!';
     document.getElementById('log-feedback-text').textContent=reply;
-  }catch(e){document.getElementById('log-feedback-text').textContent='Log saved to Google Sheets! AI analysis unavailable right now.';}
+  }catch(e){document.getElementById('log-feedback-text').textContent='Log saved to Google Sheets! AI analysis unavailable - check your API key.';}
   document.getElementById('log-form-wrap').style.display='none';
   document.getElementById('log-feedback-wrap').style.display='';
   btn.disabled=false;btn.textContent='Submit & Get AI Feedback 🔥';
@@ -381,7 +376,7 @@ function resetLogForm(){
 }
 
 function clearLogs(){
-  if(confirm('Clear local cache? Your data in Google Sheets is NOT affected.')){
+  if(confirm('Clear local cache? Your Google Sheets data is NOT affected.')){
     logs=[];localStorage.removeItem('fc_logs_ron');initDB();initProg();
   }
 }
@@ -403,7 +398,6 @@ function goToPlan(){
   setTimeout(function(){sendChatMsg('plan','Give me the full detailed workout plan for today: '+f.l+'. Include all exercises, sets, reps and starting weights for Ron who is returning from a sedentary lifestyle.');},300);
 }
 
-// INIT
 document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
 initDB();initPlan();initCoach();
 </script>
