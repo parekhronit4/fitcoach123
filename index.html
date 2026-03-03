@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="FitCoach AI"/>
+<title>FitCoach AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;background:linear-gradient(135deg,#0a0a0a 0%,#111827 50%,#0d1117 100%);font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif;color:#e2e8f0;padding-bottom:env(safe-area-inset-bottom)}
+.header{background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);padding:14px 20px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)}
+.logo{font-size:20px;font-weight:800;background:linear-gradient(90deg,#f97316,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.badge{background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);color:#fb923c;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-left:auto}
+.tabs{display:flex;gap:4px;padding:10px 12px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.06);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:99;backdrop-filter:blur(20px)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 13px;border-radius:8px;border:none;cursor:pointer;font-size:13px;white-space:nowrap;background:transparent;color:#94a3b8;transition:all 0.2s;font-weight:400;font-family:inherit}
+.tab.active{background:rgba(249,115,22,0.2);color:#fb923c;font-weight:600}
+.content{padding:16px;max-width:680px;margin:0 auto}
+.page{display:none}.page.active{display:block}
+.card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px;margin-bottom:14px}
+.section-title{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{border-radius:12px;padding:16px;text-align:center}
+.stat-orange{background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2)}
+.stat-green{background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2)}
+.stat-blue{background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2)}
+.stat-purple{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2)}
+.stat-val{font-size:26px;font-weight:800;line-height:1}
+.stat-label{font-size:10px;color:#64748b;margin-top:5px;text-transform:uppercase;letter-spacing:0.5px}
+.progress-bar{height:8px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#f97316,#fb923c);border-radius:4px;transition:width 0.5s}
+.today-card{border-radius:16px;padding:18px;margin-bottom:14px}
+.week-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.week-day{width:30px;font-size:11px;color:#64748b;font-weight:600}
+.week-label{font-size:13px;color:#94a3b8}.week-label.today{color:#fb923c;font-weight:700}
+.today-badge{margin-left:auto;font-size:10px;color:#fb923c;font-weight:700}
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 230px)}
+.chat-messages{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
+.bubble{margin:7px 0;padding:11px 14px;font-size:14px;line-height:1.6;white-space:pre-wrap;max-width:85%;border-radius:16px}
+.bubble.user{background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3);margin-left:auto;border-radius:16px 16px 4px 16px}
+.bubble.assistant{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px 16px 16px 4px}
+.bubble.thinking{color:#64748b;font-style:italic}
+.input-row{display:flex;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)}
+.chat-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 13px;color:#e2e8f0;font-size:14px;outline:none;font-family:inherit}
+.chat-input::placeholder{color:#4b5563}
+.send-btn{background:linear-gradient(135deg,#f97316,#fb923c);border:none;border-radius:10px;padding:10px 16px;color:white;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;font-family:inherit}
+.quick-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:6px 12px;font-size:12px;color:#94a3b8;cursor:pointer;font-family:inherit}
+.chip:active{background:rgba(249,115,22,0.1);color:#fb923c}
+.form-field{margin-bottom:14px}
+label{font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+input[type=text],input[type=number],input[type=date],textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 13px;color:#e2e8f0;font-size:15px;outline:none;font-family:inherit;-webkit-appearance:none}
+textarea{resize:vertical;min-height:75px}
+input[type=date]{color-scheme:dark}
+.submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:12px;color:white;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.submit-btn:disabled{opacity:0.6}
+.feedback-box{background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:12px;padding:15px;margin-top:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;color:#86efac}
+.log-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:11px 14px;margin-bottom:8px}
+.bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-date{font-size:11px;color:#64748b;width:78px;flex-shrink:0}
+.bar-track{flex:1;height:26px;background:rgba(255,255,255,0.04);border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:8px}
+.bar-fill span{font-size:11px;font-weight:700;color:white}
+.danger-btn{width:100%;padding:11px;background:transparent;border:1px solid rgba(248,113,113,0.25);border-radius:10px;color:#f87171;cursor:pointer;font-size:13px;font-family:inherit;margin-top:8px}
+.secondary-btn{width:100%;padding:14px;background:rgba(255,255,255,0.07);border:none;border-radius:12px;color:#e2e8f0;font-weight:600;font-size:15px;cursor:pointer;font-family:inherit;margin-top:12px}
+.get-plan-btn{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:10px;padding:9px 14px;color:#fb923c;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;margin-top:12px;display:inline-block}
+.empty{color:#64748b;font-size:14px;text-align:center;padding:24px}
+.progress-info{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:6px}
+.progress-pct{font-size:12px;color:#64748b;margin-top:7px;text-align:center}
+.sync-status{font-size:11px;margin-top:8px;text-align:center;padding:6px;border-radius:8px}
+.sync-ok{background:rgba(74,222,128,0.08);color:#4ade80}
+.sync-err{background:rgba(248,113,113,0.08);color:#f87171}
+.sync-ing{background:rgba(249,115,22,0.08);color:#fb923c}
+</style>
+</head>
+<body>
+<div class="header">
+  <span style="font-size:22px">🔥</span>
+  <span class="logo">FitCoach AI</span>
+  <span class="badge">Hey Ron! 💪</span>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+  <button class="tab" onclick="switchTab('plan',this)">Today's Plan</button>
+  <button class="tab" onclick="switchTab('log',this)">Log Workout</button>
+  <button class="tab" onclick="switchTab('coach',this)">AI Coach</button>
+  <button class="tab" onclick="switchTab('progress',this)">Progress</button>
+</div>
+<div class="content">
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stat-grid">
+      <div class="stat stat-orange"><div class="stat-val" style="color:#fb923c" id="d-weight">83 kg</div><div class="stat-label">Current Weight</div></div>
+      <div class="stat stat-green"><div class="stat-val" style="color:#4ade80" id="d-togo">10 kg</div><div class="stat-label">To Goal</div></div>
+      <div class="stat stat-blue"><div class="stat-val" style="color:#60a5fa" id="d-bmi">28.5</div><div class="stat-label">BMI (target &lt;25)</div></div>
+      <div class="stat stat-purple"><div class="stat-val" style="color:#a78bfa" id="d-days">--</div><div class="stat-label">Days to May 31</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Journey Progress</div>
+      <div class="progress-info"><span>83 kg (start)</span><span style="color:#fb923c;font-weight:700" id="d-lost">Starting out</span><span>73 kg (goal)</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="d-bar" style="width:0%"></div></div>
+      <div class="progress-pct" id="d-pace"></div>
+    </div>
+    <div class="today-card" id="today-card">
+      <div class="section-title">Today</div>
+      <div style="font-size:28px;margin-bottom:4px" id="today-icon">💪</div>
+      <div style="font-size:19px;font-weight:700" id="today-label">Loading...</div>
+      <button class="get-plan-btn" onclick="goToPlan()">Get Today's Full Plan →</button>
+    </div>
+    <div class="card"><div class="section-title">Weekly Schedule</div><div id="week-grid"></div></div>
+    <div class="card" id="recent-logs-card" style="display:none"><div class="section-title">Recent Logs</div><div id="recent-logs"></div></div>
+  </div>
+
+  <!-- TODAY'S PLAN -->
+  <div class="page" id="page-plan">
+    <div class="card" id="plan-header"></div>
+    <div class="quick-chips" id="plan-chips"></div>
+    <div class="chat-wrap">
+      <div class="chat-messages" id="plan-messages"></div>
+      <div class="input-row">
+        <input class="chat-input" id="plan-input" placeholder="Ask about today's workout..." onkeydown="if(event.key==='Enter')sendChat('plan')"/>
+        <button class="send-btn" onclick="sendChat('plan')">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG WORKOUT -->
+  <div class="page" id="page-log">
+    <div id="log-form-wrap">
+      <div class="card">
+        <div class="section-title">Log Your Day, Ron</div>
+        <div class="form-field"><label>Date</label><input type="date" id="log-date"/></div>
+        <div class="form-field"><label>Weight Today (kg)</label><input type="number" step="0.1" id="log-weight" placeholder="e.g. 82.5"/></div>
+        <div class="form-field"><label>Exercises Done</label><textarea id="log-exercises" placeholder="e.g. Bench press 3x10 at 20kg, Tricep pushdown 3x12, 20 min treadmill..."></textarea></div>
+        <div class="form-field"><label>Food Eaten Today</label><textarea id="log-food" placeholder="e.g. Breakfast: oats + banana, Lunch: dal rice, Dinner: paneer roti..."></textarea></div>
+        <div class="form-field"><label>Exercise Duration (minutes)</label><input type="number" id="log-duration" placeholder="e.g. 60"/></div>
+        <div class="form-field"><label>Notes</label><textarea id="log-notes" placeholder="Energy levels, how you felt, what you skipped..."></textarea></div>
+        <button class="submit-btn" id="log-submit-btn" onclick="submitLog()">Submit &amp; Get AI Feedback 🔥</button>
+        <div id="sync-status" class="sync-status" style="display:none"></div>
+      </div>
+    </div>
+    <div id="log-feedback-wrap" style="display:none">
+      <div class="card">
+        <div class="section-title">Day Analysis ✅</div>
+        <div class="feedback-box" id="log-feedback-text"></div>
+        <button class="secondary-btn" onclick="resetLogForm()">Log Another Day</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI COACH -->
+  <div class="page" id="page-coach">
+    <div class="section-title" style="padding:4px 0 10px">Chat with your AI Coach</div>
+    <div class="quick-chips" id="coach-chips"></div>
+    <div class="chat-wrap">
+      <div class="chat-messages" id="coach-messages"></div>
+      <div class="input-row">
+        <input class="chat-input" id="coach-input" placeholder="Ask anything - workouts, food, motivation..." onkeydown="if(event.key==='Enter')sendChat('coach')"/>
+        <button class="send-btn" onclick="sendChat('coach')">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="page" id="page-progress">
+    <div class="stat-grid">
+      <div class="stat stat-orange"><div class="stat-val" style="color:#fb923c" id="p-logged">0</div><div class="stat-label">Days Logged</div></div>
+      <div class="stat stat-green"><div class="stat-val" style="color:#4ade80" id="p-lost">0 kg</div><div class="stat-label">Lost So Far</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="section-title" style="margin-bottom:0">Weight Trend</div>
+        <button class="chip" onclick="loadFromSheets()" style="font-size:11px">↻ Sync from Sheets</button>
+      </div>
+      <div id="weight-chart"></div>
+    </div>
+    <div class="card"><div class="section-title">All Logs</div><div id="all-logs"></div></div>
+    <button class="danger-btn" onclick="clearLogs()">Clear Local Cache</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz2pbxjZpN0HU9fiiMhKqWbUAvl-84IWd4_j1Neo6OqgNoWeiVzmH6UZS3XADbx5pvy/exec';
+var SYS = 'You are FitCoach AI, a personal trainer and nutritionist for Ron. Ron: Age 32, Height 5.6ft (170.7cm), Start 83kg, Goal 73kg by May 31 2025, BMI ~28.5. Sedentary WFH, Fit4Less gym. Diet: Vegetarian STRICT - NO onion, NO garlic, NO eggs, NO fish. Weekly split: Mon=Chest+Triceps, Tue=Back+Biceps, Wed=Legs+Glutes, Thu=Shoulders+Core, Fri=Full Body Circuit, Sat=HIIT+Cardio, Sun=Rest. For workouts list exercises with sets x reps and beginner-friendly starting weights. For log analysis give day score 1-10, calorie estimate, deficit or surplus, progress to goal. Be concise, structured, encouraging. Always address Ron by name.';
+
+var DF=[{l:'Rest Day',i:'😴',c:'100,116,139'},{l:'Chest + Triceps',i:'💪',c:'249,115,22'},{l:'Back + Biceps',i:'🏋️',c:'78,205,196'},{l:'Legs + Glutes',i:'🦵',c:'69,183,209'},{l:'Shoulders + Core',i:'🎯',c:'150,201,61'},{l:'Full Body Circuit',i:'⚡',c:'249,202,36'},{l:'HIIT + Cardio',i:'🏃',c:'249,115,249'}];
+var DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var FD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var logs=JSON.parse(localStorage.getItem('fc_logs_ron')||'[]');
+var pMsgs=[{r:'assistant',t:"Hey Ron! I'm your FitCoach AI 💪 Tap a suggestion above or ask about today's workout."}];
+var cMsgs=[{r:'assistant',t:"Hey Ron! I'm your FitCoach AI 💪 I know your full profile - 83kg to 73kg by May 31, vegetarian (no onion/garlic/eggs/fish), Fit4Less gym. Let's crush that goal! Ask me anything."}];
+var TARGET=new Date('2025-05-31');
+
+function getCW(){var w=logs.filter(function(l){return l.wt;});return w.length>0?parseFloat(w[w.length-1].wt):83;}
+function getDays(){var t=new Date();t.setHours(0,0,0,0);return Math.max(0,Math.ceil((TARGET-t)/86400000));}
+function getBMI(w){return(w/(1.707*1.707)).toFixed(1);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function saveLogs(){localStorage.setItem('fc_logs_ron',JSON.stringify(logs));}
+
+// ============================================================
+// GOOGLE SHEETS SYNC
+// ============================================================
+async function saveToSheets(entry){
+  var ss=document.getElementById('sync-status');
+  ss.style.display='';ss.className='sync-status sync-ing';ss.textContent='Saving to Google Sheets...';
+  try{
+    await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:entry.dt,weight:entry.wt,exercises:entry.ex,food:entry.food,duration:entry.dur,notes:entry.notes})});
+    ss.className='sync-status sync-ok';ss.textContent='✅ Saved to Google Sheets!';
+    setTimeout(function(){ss.style.display='none';},3000);
+  }catch(e){
+    ss.className='sync-status sync-err';ss.textContent='⚠️ Saved locally only. Sheets sync failed.';
+  }
+}
+
+async function loadFromSheets(){
+  var chart=document.getElementById('weight-chart');
+  chart.innerHTML='<div class="empty">Loading from Google Sheets...</div>';
+  try{
+    var res=await fetch(SHEETS_URL+'?t='+Date.now());
+    var data=await res.json();
+    if(data&&data.length>0){
+      // merge sheets data into local logs
+      data.forEach(function(row){
+        if(!row.Date)return;
+        var exists=logs.find(function(l){return l.dt===row.Date;});
+        if(!exists){logs.push({dt:row.Date,wt:row.Weight,ex:row.Exercises,food:row.Food,dur:row.Duration,notes:row.Notes});}
+      });
+      saveLogs();
+      initProg();
+      initDB();
+    }
+  }catch(e){
+    chart.innerHTML='<div class="empty">Could not load from Sheets. Check connection.</div>';
+  }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function initDB(){
+  var cw=getCW(),lost=83-cw,tg=Math.max(0,cw-73),pct=Math.min(100,(lost/10)*100),days=getDays();
+  document.getElementById('d-weight').textContent=cw+' kg';
+  document.getElementById('d-togo').textContent=tg>0?tg.toFixed(1)+' kg':'Done!';
+  document.getElementById('d-bmi').textContent=getBMI(cw);
+  document.getElementById('d-days').textContent=days;
+  document.getElementById('d-lost').textContent=lost>0?lost.toFixed(1)+' kg lost!':'Starting out';
+  document.getElementById('d-bar').style.width=pct+'%';
+  document.getElementById('d-pace').textContent=pct.toFixed(0)+'% complete - Need ~'+(days>0?((tg/days)*7).toFixed(2):'0')+' kg/week';
+  var dow=new Date().getDay(),f=DF[dow],tc=document.getElementById('today-card');
+  tc.style.background='linear-gradient(135deg,rgba('+f.c+',0.12),rgba('+f.c+',0.05))';
+  tc.style.border='1px solid rgba('+f.c+',0.25)';
+  document.getElementById('today-icon').textContent=f.i;
+  document.getElementById('today-label').textContent=FD[dow]+' - '+f.l;
+  var wg=document.getElementById('week-grid');wg.innerHTML='';
+  DF.forEach(function(fi,i){
+    var it=i===dow;
+    wg.innerHTML+='<div class="week-row"><span class="week-day">'+DN[i]+'</span><span style="font-size:15px">'+fi.i+'</span><span class="week-label'+(it?' today':'')+'">'+fi.l+'</span>'+(it?'<span class="today-badge">TODAY</span>':'')+'</div>';
+  });
+  var rl=logs.slice(-3).reverse();
+  if(rl.length>0){
+    document.getElementById('recent-logs-card').style.display='';
+    document.getElementById('recent-logs').innerHTML=rl.map(function(l){
+      return'<div class="log-item"><div style="font-size:11px;color:#64748b">'+esc(l.dt)+'</div>'+(l.wt?'<div style="color:#fb923c;font-weight:700">'+esc(l.wt)+' kg</div>':'')+(l.ex?'<div style="font-size:12px;color:#64748b;margin-top:3px">💪 '+esc(l.ex.slice(0,60))+'</div>':'')+'</div>';
+    }).join('');
+  }
+}
+
+// ============================================================
+// TODAY'S PLAN
+// ============================================================
+function initPlan(){
+  var dow=new Date().getDay(),f=DF[dow];
+  document.getElementById('plan-header').innerHTML='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+f.i+'</span><div><div style="font-weight:700;font-size:15px">'+FD[dow]+"'s Focus</div><div style='color:#fb923c;font-size:13px'>"+f.l+'</div></div></div>';
+  var ch=['Full workout for today: '+f.l+' with sets, reps and weights for beginner returning to gym','What to eat before and after gym today?','Alternative exercises if machines are busy','How long should today session take?'];
+  window.planChips=ch;
+  document.getElementById('plan-chips').innerHTML=ch.map(function(q,i){
+    return'<button class="chip" onclick="doMsg(\'plan\',planChips['+i+'])">'+(q.length>45?q.slice(0,45)+'...':q)+'</button>';
+  }).join('');
+  renderM('plan');
+}
+
+// ============================================================
+// AI COACH
+// ============================================================
+function initCoach(){
+  var ch=['Give me a full week meal plan','What supplements should I take?','I am feeling sore, what to do?','High protein vegetarian recipe','How many calories should I eat daily?'];
+  window.coachChips=ch;
+  document.getElementById('coach-chips').innerHTML=ch.map(function(q,i){
+    return'<button class="chip" onclick="doMsg(\'coach\',coachChips['+i+'])">'+q+'</button>';
+  }).join('');
+  renderM('coach');
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function initProg(){
+  var cw=getCW(),lost=Math.max(0,83-cw);
+  document.getElementById('p-logged').textContent=logs.length;
+  document.getElementById('p-lost').textContent=lost.toFixed(1)+' kg';
+  var wl=logs.filter(function(l){return l.wt;});
+  document.getElementById('weight-chart').innerHTML=wl.length===0?'<div class="empty">No weight logs yet. Tap Sync or log your first day!</div>':wl.map(function(l){
+    var w=parseFloat(l.wt),p=Math.max(8,((w-70)/13)*100),c=w<=73?'#4ade80':w<=76?'#fb923c':'#f87171';
+    return'<div class="bar-wrap"><span class="bar-date">'+esc(l.dt)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+p+'%;background:'+c+'"><span>'+w+' kg</span></div></div></div>';
+  }).join('');
+  document.getElementById('all-logs').innerHTML=logs.length===0?'<div class="empty">No logs yet.</div>':[...logs].reverse().map(function(l){
+    return'<div class="log-item"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">'+esc(l.dt)+'</span>'+(l.wt?'<span style="color:#fb923c;font-weight:700">'+esc(l.wt)+' kg</span>':'')+'</div>'+(l.ex?'<div style="font-size:12px;color:#64748b;margin-top:3px">💪 '+esc(l.ex)+'</div>':'')+(l.dur?'<div style="font-size:12px;color:#64748b">⏱ '+esc(l.dur)+' min</div>':'')+(l.food?'<div style="font-size:12px;color:#64748b">🥗 '+esc(l.food.slice(0,80))+'</div>':'')+'</div>';
+  }).join('');
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+function renderM(tab){
+  var msgs=tab==='plan'?pMsgs:cMsgs,el=document.getElementById(tab+'-messages');
+  el.innerHTML=msgs.map(function(m){return'<div class="bubble '+(m.r==='user'?'user':'assistant')+'">'+esc(m.t)+'</div>';}).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function doMsg(tab,text){sendChatMsg(tab,text);}
+async function sendChat(tab){
+  var inp=document.getElementById(tab+'-input'),text=inp.value.trim();
+  if(!text)return;inp.value='';await sendChatMsg(tab,text);
+}
+async function sendChatMsg(tab,text){
+  var msgs=tab==='plan'?pMsgs:cMsgs;
+  msgs.push({r:'user',t:text});renderM(tab);
+  var el=document.getElementById(tab+'-messages');
+  el.innerHTML+='<div class="bubble assistant thinking">Thinking... ⏳</div>';
+  el.scrollTop=el.scrollHeight;
+  var apiMsgs=msgs.map(function(m){return{role:m.r==='user'?'user':'assistant',content:m.t};});
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:apiMsgs})});
+    var data=await res.json();
+    var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Sorry, no response.';
+    msgs.push({r:'assistant',t:reply});
+  }catch(e){msgs.push({r:'assistant',t:'Connection error. Please try again.'});}
+  renderM(tab);
+}
+
+// ============================================================
+// LOG WORKOUT
+// ============================================================
+async function submitLog(){
+  var date=document.getElementById('log-date').value,
+      wt=document.getElementById('log-weight').value,
+      ex=document.getElementById('log-exercises').value,
+      food=document.getElementById('log-food').value,
+      dur=document.getElementById('log-duration').value,
+      notes=document.getElementById('log-notes').value;
+  if(!wt&&!ex&&!food){alert('Fill in at least one field.');return;}
+  var btn=document.getElementById('log-submit-btn');
+  btn.disabled=true;btn.textContent='Analyzing your day... ⏳';
+  var entry={dt:date,wt:wt,ex:ex,food:food,dur:dur,notes:notes,ts:Date.now()};
+  logs.push(entry);saveLogs();
+  // Save to Google Sheets
+  await saveToSheets(entry);
+  // Get AI feedback
+  var prompt='Analyze Ron\'s day:\nDate: '+date+'\nWeight: '+(wt||'not recorded')+' kg\nExercises: '+(ex||'none')+'\nFood: '+(food||'none')+'\nDuration: '+(dur||'unknown')+' min\nNotes: '+(notes||'none')+'\n\nRon started at 83kg, goal 73kg by May 31 2025.\nGive:\n1) Day score 1-10\n2) Calories burned vs consumed estimate\n3) Progress toward goal\n4) Key wins today\n5) One improvement for tomorrow\nAddress Ron by name.';
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:[{role:'user',content:prompt}]})});
+    var data=await res.json();
+    var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Log saved!';
+    document.getElementById('log-feedback-text').textContent=reply;
+  }catch(e){document.getElementById('log-feedback-text').textContent='Log saved to Google Sheets! AI analysis unavailable right now.';}
+  document.getElementById('log-form-wrap').style.display='none';
+  document.getElementById('log-feedback-wrap').style.display='';
+  btn.disabled=false;btn.textContent='Submit & Get AI Feedback 🔥';
+}
+
+function resetLogForm(){
+  ['log-weight','log-exercises','log-food','log-duration','log-notes'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('log-form-wrap').style.display='';
+  document.getElementById('log-feedback-wrap').style.display='none';
+  document.getElementById('sync-status').style.display='none';
+}
+
+function clearLogs(){
+  if(confirm('Clear local cache? Your data in Google Sheets is NOT affected.')){
+    logs=[];localStorage.removeItem('fc_logs_ron');initDB();initProg();
+  }
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('page-'+tab).classList.add('active');btn.classList.add('active');
+  if(tab==='dashboard')initDB();
+  if(tab==='plan')initPlan();
+  if(tab==='coach')initCoach();
+  if(tab==='progress')initProg();
+  if(tab==='log')document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+}
+
+function goToPlan(){
+  document.querySelectorAll('.tab')[1].click();
+  var dow=new Date().getDay(),f=DF[dow];
+  setTimeout(function(){sendChatMsg('plan','Give me the full detailed workout plan for today: '+f.l+'. Include all exercises, sets, reps and starting weights for Ron who is returning from a sedentary lifestyle.');},300);
+}
+
+// INIT
+document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+initDB();initPlan();initCoach();
+</script>
+</body>
+</html>
