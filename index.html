@@ -51,7 +51,7 @@ body{min-height:100vh;background:linear-gradient(135deg,#0a0a0a 0%,#111827 50%,#
 .chip:active{background:rgba(249,115,22,0.1);color:#fb923c}
 .form-field{margin-bottom:14px}
 label{font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
-input[type=text],input[type=number],input[type=date],textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 13px;color:#e2e8f0;font-size:15px;outline:none;font-family:inherit;-webkit-appearance:none}
+input[type=text],input[type=number],input[type=date],input[type=password],textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:11px 13px;color:#e2e8f0;font-size:15px;outline:none;font-family:inherit;-webkit-appearance:none}
 textarea{resize:vertical;min-height:75px}
 input[type=date]{color-scheme:dark}
 .submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:12px;color:white;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
@@ -73,10 +73,53 @@ input[type=date]{color-scheme:dark}
 .sync-ok{background:rgba(74,222,128,0.08);color:#4ade80}
 .sync-err{background:rgba(248,113,113,0.08);color:#f87171}
 .sync-ing{background:rgba(249,115,22,0.08);color:#fb923c}
-.api-warning{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:12px;padding:14px;margin-bottom:14px;font-size:13px;color:#fca5a5;line-height:1.6}
+
+/* API KEY SETUP SCREEN */
+#setup-screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(135deg,#0a0a0a 0%,#111827 50%,#0d1117 100%);
+  z-index:999;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.setup-box{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:24px;padding:32px 24px;max-width:400px;width:100%;text-align:center;
+}
+.setup-logo{font-size:48px;margin-bottom:12px}
+.setup-title{font-size:24px;font-weight:800;background:linear-gradient(90deg,#f97316,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.setup-sub{font-size:14px;color:#64748b;margin-bottom:28px;line-height:1.6}
+.setup-label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;text-align:left;display:block;margin-bottom:8px}
+.setup-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px;color:#e2e8f0;font-size:14px;outline:none;font-family:inherit;margin-bottom:8px;-webkit-appearance:none}
+.setup-hint{font-size:11px;color:#475569;text-align:left;margin-bottom:20px;line-height:1.5}
+.setup-btn{width:100%;padding:15px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:12px;color:white;font-weight:700;font-size:16px;cursor:pointer;font-family:inherit}
+.setup-btn:disabled{opacity:0.5}
+.setup-error{color:#f87171;font-size:12px;margin-bottom:12px;display:none}
+.setup-steps{background:rgba(255,255,255,0.03);border-radius:12px;padding:14px;margin-bottom:20px;text-align:left}
+.setup-step{font-size:12px;color:#64748b;padding:4px 0;line-height:1.5}
+.setup-step a{color:#fb923c;text-decoration:none}
 </style>
 </head>
 <body>
+
+<!-- API KEY SETUP SCREEN -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-box">
+    <div class="setup-logo">🔥</div>
+    <div class="setup-title">FitCoach AI</div>
+    <div class="setup-sub">Welcome Ron! One quick setup step to activate your AI trainer.</div>
+    <div class="setup-steps">
+      <div class="setup-step">1. Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      <div class="setup-step">2. Click <strong>API Keys</strong> → <strong>Create Key</strong></div>
+      <div class="setup-step">3. Copy the key and paste it below</div>
+    </div>
+    <span class="setup-label">Your Anthropic API Key</span>
+    <input type="password" class="setup-input" id="setup-key-input" placeholder="sk-ant-api03-..."/>
+    <div class="setup-hint">🔒 Your key is saved only on this device. It never goes to GitHub or any server.</div>
+    <div class="setup-error" id="setup-error">Please enter a valid API key starting with sk-ant-</div>
+    <button class="setup-btn" id="setup-btn" onclick="saveApiKey()">Start Training 💪</button>
+  </div>
+</div>
+
+<div id="main-app" style="display:none">
 <div class="header">
   <span style="font-size:22px">🔥</span>
   <span class="logo">FitCoach AI</span>
@@ -92,9 +135,6 @@ input[type=date]{color-scheme:dark}
 <div class="content">
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
-    <div id="api-warning" style="display:none" class="api-warning">
-      ⚠️ <strong>API Key not set.</strong> AI features won't work. Open index.html on GitHub and replace <code>PASTE_YOUR_API_KEY_HERE</code> with your actual Anthropic API key.
-    </div>
     <div class="stat-grid">
       <div class="stat stat-orange"><div class="stat-val" style="color:#fb923c" id="d-weight">83 kg</div><div class="stat-label">Current Weight</div></div>
       <div class="stat stat-green"><div class="stat-val" style="color:#4ade80" id="d-togo">10 kg</div><div class="stat-label">To Goal</div></div>
@@ -184,19 +224,14 @@ input[type=date]{color-scheme:dark}
     <button class="danger-btn" onclick="clearLogs()">Clear Local Cache</button>
   </div>
 </div>
+</div><!-- /main-app -->
 
 <script>
 // ============================================================
-// ⚠️  PASTE YOUR ANTHROPIC API KEY BELOW — REPLACE THE PLACEHOLDER
+// CONFIG
 // ============================================================
-var API_KEY = 'sk-ant-api0' + '3-GulrZ79byWSyyHkZlOTYMZ_oVv0KpLo0UfNGeRJLwOyx5Eb-1dLrzMRfG8IgCUWDB9uKkb6m_FqIXGFb8T5aGA-gChYUwAA';
-
-// ============================================================
-// CONFIG — already set up for Ron
-// ============================================================
-var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz2pbxjZpN0HU9fiiMhKqWbUAvl-84IWd4_j1Neo6OqgNoWeiVzmH6UZS3XADbx5pvy/exec';
-var SYS = 'You are FitCoach AI, a personal trainer and nutritionist for Ron. Ron: Age 32, Height 5.6ft (170.7cm), Start 83kg, Goal 73kg by May 31 2025, BMI ~28.5. Sedentary WFH, Fit4Less gym. Diet: Vegetarian STRICT - NO onion, NO garlic, NO eggs, NO fish. Weekly split: Mon=Chest+Triceps, Tue=Back+Biceps, Wed=Legs+Glutes, Thu=Shoulders+Core, Fri=Full Body Circuit, Sat=HIIT+Cardio, Sun=Rest. For workouts list exercises with sets x reps and beginner-friendly starting weights. For log analysis give day score 1-10, calorie estimate, deficit or surplus, progress to goal. Be concise, structured, encouraging. Always address Ron by name.';
-
+var SHEETS_URL='https://script.google.com/macros/s/AKfycbz2pbxjZpN0HU9fiiMhKqWbUAvl-84IWd4_j1Neo6OqgNoWeiVzmH6UZS3XADbx5pvy/exec';
+var SYS='You are FitCoach AI, a personal trainer and nutritionist for Ron. Ron: Age 32, Height 5.6ft (170.7cm), Start 83kg, Goal 73kg by May 31 2025, BMI ~28.5. Sedentary WFH, Fit4Less gym. Diet: Vegetarian STRICT - NO onion, NO garlic, NO eggs, NO fish. Weekly split: Mon=Chest+Triceps, Tue=Back+Biceps, Wed=Legs+Glutes, Thu=Shoulders+Core, Fri=Full Body Circuit, Sat=HIIT+Cardio, Sun=Rest. For workouts list exercises with sets x reps and beginner-friendly starting weights. For log analysis give day score 1-10, calorie estimate, deficit or surplus, progress to goal. Be concise, structured, encouraging. Always address Ron by name.';
 var DF=[{l:'Rest Day',i:'😴',c:'100,116,139'},{l:'Chest + Triceps',i:'💪',c:'249,115,22'},{l:'Back + Biceps',i:'🏋️',c:'78,205,196'},{l:'Legs + Glutes',i:'🦵',c:'69,183,209'},{l:'Shoulders + Core',i:'🎯',c:'150,201,61'},{l:'Full Body Circuit',i:'⚡',c:'249,202,36'},{l:'HIIT + Cardio',i:'🏃',c:'249,115,249'}];
 var DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var FD=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -204,20 +239,61 @@ var logs=JSON.parse(localStorage.getItem('fc_logs_ron')||'[]');
 var pMsgs=[{r:'assistant',t:"Hey Ron! I'm your FitCoach AI 💪 Tap a suggestion above or ask about today's workout."}];
 var cMsgs=[{r:'assistant',t:"Hey Ron! I'm your FitCoach AI 💪 I know your full profile - 83kg to 73kg by May 31, vegetarian (no onion/garlic/eggs/fish), Fit4Less gym. Let's crush that goal! Ask me anything."}];
 var TARGET=new Date('2025-05-31');
+var API_KEY='';
 
+// ============================================================
+// SETUP SCREEN
+// ============================================================
+function init(){
+  var key=localStorage.getItem('fc_api_key');
+  if(key&&key.startsWith('sk-ant-')){
+    API_KEY=key;
+    document.getElementById('setup-screen').style.display='none';
+    document.getElementById('main-app').style.display='';
+    startApp();
+  } else {
+    document.getElementById('setup-screen').style.display='flex';
+    document.getElementById('main-app').style.display='none';
+  }
+}
+
+function saveApiKey(){
+  var key=document.getElementById('setup-key-input').value.trim();
+  var err=document.getElementById('setup-error');
+  var btn=document.getElementById('setup-btn');
+  if(!key||!key.startsWith('sk-ant-')){
+    err.style.display='block';
+    return;
+  }
+  err.style.display='none';
+  btn.textContent='Setting up... ⏳';
+  btn.disabled=true;
+  localStorage.setItem('fc_api_key',key);
+  API_KEY=key;
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('main-app').style.display='';
+  startApp();
+}
+
+// Allow Enter key on setup input
+document.getElementById('setup-key-input').addEventListener('keydown',function(e){
+  if(e.key==='Enter')saveApiKey();
+});
+
+function startApp(){
+  document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+  initDB();initPlan();initCoach();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
 function getCW(){var w=logs.filter(function(l){return l.wt;});return w.length>0?parseFloat(w[w.length-1].wt):83;}
 function getDays(){var t=new Date();t.setHours(0,0,0,0);return Math.max(0,Math.ceil((TARGET-t)/86400000));}
 function getBMI(w){return(w/(1.707*1.707)).toFixed(1);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function saveLogs(){localStorage.setItem('fc_logs_ron',JSON.stringify(logs));}
 function apiHeaders(){return{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};}
-
-// Check API key on load
-window.addEventListener('load', function(){
-  if(API_KEY === 'PASTE_YOUR_API_KEY_HERE' || !API_KEY){
-    document.getElementById('api-warning').style.display='';
-  }
-});
 
 // ============================================================
 // GOOGLE SHEETS
@@ -340,7 +416,7 @@ async function sendChatMsg(tab,text){
     var data=await res.json();
     var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Sorry, no response.';
     msgs.push({r:'assistant',t:reply});
-  }catch(e){msgs.push({r:'assistant',t:'Connection error. Please check your API key is set correctly in index.html.'});}
+  }catch(e){msgs.push({r:'assistant',t:'Connection error. Please try again.'});}
   renderM(tab);
 }
 
@@ -361,7 +437,7 @@ async function submitLog(){
     var data=await res.json();
     var reply=(data.content||[]).map(function(b){return b.text||'';}).join('\n')||'Log saved!';
     document.getElementById('log-feedback-text').textContent=reply;
-  }catch(e){document.getElementById('log-feedback-text').textContent='Log saved to Google Sheets! AI analysis unavailable - check your API key.';}
+  }catch(e){document.getElementById('log-feedback-text').textContent='Log saved to Google Sheets! AI analysis unavailable right now.';}
   document.getElementById('log-form-wrap').style.display='none';
   document.getElementById('log-feedback-wrap').style.display='';
   btn.disabled=false;btn.textContent='Submit & Get AI Feedback 🔥';
@@ -398,8 +474,8 @@ function goToPlan(){
   setTimeout(function(){sendChatMsg('plan','Give me the full detailed workout plan for today: '+f.l+'. Include all exercises, sets, reps and starting weights for Ron who is returning from a sedentary lifestyle.');},300);
 }
 
-document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
-initDB();initPlan();initCoach();
+// START
+init();
 </script>
 </body>
 </html>
